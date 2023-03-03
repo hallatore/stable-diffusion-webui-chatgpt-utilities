@@ -13,7 +13,7 @@ def find_json(input_text):
     start_index = start_index_brackets
     end_index = end_index_brackets
 
-    if (start_index_curly < start_index_brackets):
+    if (start_index_curly < start_index_brackets or start_index_brackets < 0):
         start_index = start_index_curly
         end_index = end_index_curly
 
