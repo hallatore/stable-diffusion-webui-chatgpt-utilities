@@ -69,9 +69,10 @@ class Script(scripts.Script):
 
     def ui(self, is_img2img):
         chatgpt_prompt = gr.Textbox(label="", lines=3)
-        return [chatgpt_prompt]
+        chatgpt_skip_prompt = gr.Checkbox(label="Replace prompt completely instead of appending to it", default=False)
+        return [chatgpt_prompt, chatgpt_skip_prompt]
 
-    def run(self, p, chatgpt_prompt):
+    def run(self, p, chatgpt_prompt, chatgpt_skip_prompt):
         modules.processing.fix_seed(p)
 
         openai.api_key = shared.opts.data.get("chatgpt_utilities_api_key", "")
@@ -91,7 +92,9 @@ class Script(scripts.Script):
 
         if len(original_prompt) > 0:
             prompts.append(["", original_prompt])
-            chatgpt_prefix = f"{original_prompt}, "
+
+            if not chatgpt_skip_prompt:
+                chatgpt_prefix = f"{original_prompt}, "
 
         for resp in chatgpt_json_response:
             prompts.append([resp, f"{chatgpt_prefix}{resp}"])
