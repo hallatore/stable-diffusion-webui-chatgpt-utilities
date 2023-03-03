@@ -70,12 +70,17 @@ def get_chat_json_completion(messages):
         to_message("user", f'{messages}\r\nreturn everything as a json object.\r\n{jsonChatMessage}')
         ])
     
-    print("Chat GPT response")
-    print(chat_gpt_response.strip())
+    print(f"Chat GPT response:\r\n{chat_gpt_response.strip()}\r\n")
 
     json_object = find_json(chat_gpt_response)
     parsed_response = ensure_flat_json(json_object)
+
+    if (parsed_response is None or len(parsed_response) == 0):
+        raise Exception("Failed to parse ChatGPT response. See console for details.")
     
-    print("Parsed response")
-    print(json.dumps(parsed_response, indent=4))
+    print(f"Parsed response\r\n{json.dumps(parsed_response, indent=4)}\r\n")
+
+    if (len(parsed_response) == 2 and parsed_response[0] == "First response"):
+        raise Exception("ChatGPT returned dummy response.")
+
     return parsed_response
