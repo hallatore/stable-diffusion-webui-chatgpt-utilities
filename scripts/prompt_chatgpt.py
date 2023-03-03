@@ -74,10 +74,13 @@ class Script(scripts.Script):
     def run(self, p, chatgpt_prompt):
         modules.processing.fix_seed(p)
 
+        openai.api_key = shared.opts.data.get("chatgpt_utilities_api_key", "")
+
+        if openai.api_key == "":
+            raise Exception("OpenAI API Key is not set. Please set it in the settings menu.")
 
         original_prompt = p.prompt[0] if type(p.prompt) == list else p.prompt
         chatgpt_prompt = chatgpt_prompt.replace("{prompt}", original_prompt)
-        openai.api_key = shared.opts.data.get("chatgpt_utilities_api_key", "")
         chatgpt_json_response = get_chat_json_completion(chatgpt_prompt)
 
         prompts = []
