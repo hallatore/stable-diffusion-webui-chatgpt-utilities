@@ -1,23 +1,25 @@
 import json
 import json5
-import re
 import openai
 
 def find_json(input_text):
     input_text.index
-    start_index = input_text.find('[')
-    end_index = input_text.rfind(']')
+    start_index_brackets = input_text.find('[')
+    end_index_brackets = input_text.rfind(']')    
+    start_index_curly = input_text.find('{')
+    end_index_curly = input_text.rfind('}')
     json_object = None
+
+    start_index = start_index_brackets
+    end_index = end_index_brackets
+
+    if (start_index_curly < start_index_brackets):
+        start_index = start_index_curly
+        end_index = end_index_curly
 
     if start_index >= 0 and end_index > 0:
         json_object = json5.loads(input_text[start_index:end_index+1])
         return json_object
-    else:
-        start_index = input_text.find('{')
-        end_index = input_text.rfind('}')
-        if start_index >= 0 and end_index > 0:
-            json_object = json5.loads(input_text[start_index:end_index+1])
-            return json_object
     
     print("No JSON object found in input string.")
 
@@ -40,6 +42,12 @@ def flatten_json_object(obj, parent_key='', sep=', '):
     return dict(items)
 
 def ensure_flat_json(json_array):
+    if (isinstance(json_array, list) and len(json_array) == 1 and not isinstance(json_array[0], str)):
+        return ensure_flat_json(json_array[0])    
+    
+    if (isinstance(json_array, dict) and len(json_array.values()) == 1):
+        return ensure_flat_json(list(json_array.values())[0])
+
     flattened_json_array = []
 
     if (isinstance(json_array, dict)):
@@ -49,9 +57,6 @@ def ensure_flat_json(json_array):
         flattened_dict = flatten_json_object(json_object)
         flattened_values = ", ".join(str(v) for v in flattened_dict.values())
         flattened_json_array.append(flattened_values)
-
-    if (len(flattened_json_array) == 1):
-        return ensure_flat_json(flattened_json_array[0])
     
     return flattened_json_array
 
@@ -63,11 +68,14 @@ def get_chat_completion(messages):
     return completion.choices[0].message.content
 
 def get_chat_json_completion(messages):
-    jsonChatMessage = 'Only respond with a valid json array. Example response: [{name: "First response" }, {name: "Second response" }]'
+    jsonChatMessage = 'Act like you are a terminal and always format your response as json.'
+
+    chat_request = f'{messages}\r\n{jsonChatMessage}'
+    print(f"Chat GPT request:\r\n{chat_request}\r\n")
 
     chat_gpt_response = get_chat_completion([ 
-        to_message("system", f'Act like you are a terminal and only respond with json. {jsonChatMessage}'),
-        to_message("user", f'{messages}\r\nreturn everything as a json object.\r\n{jsonChatMessage}')
+        to_message("system", jsonChatMessage),
+        to_message("user", chat_request)
         ])
     
     print(f"Chat GPT response:\r\n{chat_gpt_response.strip()}\r\n")
@@ -78,7 +86,7 @@ def get_chat_json_completion(messages):
     if (parsed_response is None or len(parsed_response) == 0):
         raise Exception("Failed to parse ChatGPT response. See console for details.")
     
-    print(f"Parsed response\r\n{json.dumps(parsed_response, indent=4)}\r\n")
+    print(f"Parsed response:\r\n{json.dumps(parsed_response, indent=4)}\r\n")
 
     if (len(parsed_response) == 2 and parsed_response[0] == "First response"):
         raise Exception("ChatGPT returned dummy response.")
