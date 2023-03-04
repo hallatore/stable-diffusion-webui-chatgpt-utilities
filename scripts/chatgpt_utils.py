@@ -45,7 +45,7 @@ def ensure_flat_json(json_array):
     if (isinstance(json_array, list) and len(json_array) == 1 and not isinstance(json_array[0], str)):
         return ensure_flat_json(json_array[0])    
     
-    if (isinstance(json_array, dict) and len(json_array.values()) == 1):
+    if (isinstance(json_array, dict) and len(json_array.values()) == 1 and not isinstance(list(json_array.values())[0], str)):
         return ensure_flat_json(list(json_array.values())[0])
 
     flattened_json_array = []
