@@ -69,10 +69,14 @@ class Script(scripts.Script):
 
     def ui(self, is_img2img):
         chatgpt_prompt = gr.Textbox(label="", lines=3)
-        chatgpt_skip_prompt = gr.Checkbox(label="Replace prompt completely instead of appending to it", default=False)
-        return [chatgpt_prompt, chatgpt_skip_prompt]
+        chatgpt_prepend_prompt = gr.Textbox(label="Prepend generated prompt with", lines=1)
+        chatgpt_append_prompt = gr.Textbox(label="Append generated prompt with", lines=1)
+        chatgpt_append_to_prompt = gr.Checkbox(label="Append to original prompt instead of replacing it", default=True)
+        chatgpt_skip_prompt = gr.Checkbox(label="Don't render initial prompt", default=True)
+        chatgpt_iterate_seed = gr.Checkbox(label="Iterate seed per permutation", default=True)
+        return [chatgpt_prompt, chatgpt_prepend_prompt, chatgpt_append_prompt, chatgpt_skip_prompt, chatgpt_append_to_prompt, chatgpt_iterate_seed]
 
-    def run(self, p, chatgpt_prompt, chatgpt_skip_prompt):
+    def run(self, p, chatgpt_prompt, chatgpt_prepend_prompt, chatgpt_append_prompt, chatgpt_skip_prompt, chatgpt_append_to_prompt, chatgpt_iterate_seed):
         modules.processing.fix_seed(p)
 
         openai.api_key = shared.opts.data.get("chatgpt_utilities_api_key", "")
@@ -91,13 +95,14 @@ class Script(scripts.Script):
         chatgpt_prefix = ""
 
         if len(original_prompt) > 0:
-            prompts.append(["", original_prompt])
-
             if not chatgpt_skip_prompt:
+                prompts.append(["", original_prompt])
+
+            if chatgpt_append_to_prompt:
                 chatgpt_prefix = f"{original_prompt}, "
 
         for resp in chatgpt_json_response:
-            prompts.append([resp, f"{chatgpt_prefix}{resp}"])
+            prompts.append([resp, f"{chatgpt_prefix}{chatgpt_prepend_prompt}{resp}{chatgpt_append_prompt}"])
                            
         p.do_not_save_grid = True
         state.job_count = 0
@@ -110,9 +115,15 @@ class Script(scripts.Script):
         image_results = []
         all_prompts = []
         infotexts = []
+        current_seed = p.seed
+
         for prompt in prompts:
             copy_p = copy.copy(p)
             copy_p.prompt = prompt[1]
+            copy_p.seed = current_seed
+
+            if chatgpt_iterate_seed:
+                current_seed += 1
 
             proc = process_images(copy_p)
             temp_grid = images.image_grid(proc.images, p.batch_size)
