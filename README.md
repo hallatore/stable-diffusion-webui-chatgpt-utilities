@@ -1,7 +1,7 @@
 # stable-diffusion-webui-chatgpt-utilities
-This an extension for [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui)
+This an extension for [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui) that enables you to use ChatGPT for prompt variations.
+It's a powerfull tool only limited by your imagination!
 
-This is a set of utilities for the stable-diffusion-webui.
 
 ## Installation & Setup
 
@@ -13,6 +13,8 @@ This is a set of utilities for the stable-diffusion-webui.
 - Enable ChatGPT under scripts in txt2img/img2img
 
 ## Usage
+
+ChatGPT is quite fluid/dynamic/analog in it's responses. So play around with what questions works best. ChatGPT response is printed in the console, so you can check what it generated there and interupt SD if it's too off.
 
 **Input textbox**
 
@@ -29,23 +31,30 @@ This checkbox replaces the prompt instead of appending to it. Turn this ON if yo
 
 ## Examples
 
-### Give me x variations example 1
+### Make new unique prompts based on a starting prompt
 
-![image](images/example_1.png)
+![image](images/example_4.png)
 
-> prompt: a forest path with trees
+> prompt: warlock karl urban rasputin, full shot, neutral background, highly detailed, digital painting, artstation, concept art, sharp focus, illustration
 
-> chatgpt: Describe 5 unique fantasy settings given the prompt "{prompt}" with 4 keywords per item
+> chatgpt: Describe an epic d&d scene using this prompt "{prompt}" as inspiration. 
+Describe the person, clothing/armor and atmosphere.
+Don't use any names or artist names from the original prompt. 
+Give me 8 example with unique characteristics. 
+Return only a short description.
 
----
+Parsed response:
 
-### Give me x variations example 2
-
-![image](images/example_2.png)
-
-> prompt: a photo of a bird
-
-> chatgpt: Give me 5 colorful tropical birds. Their names and 4 keywords
+    [
+        "A warlock in flowing, obsidian robes stands at the ready, a staff of twisted oak clasped firmly in their left hand.",
+        "A heavily armored figure glares menacingly at the viewer, their plate mail shining in the pale moonlight.",
+        "A dark and mysterious figure, garbed in tattered robes, emerges from the shadows with a sinister grin.",
+        "A robed mage, brimming with arcane power, conjures a mighty bolt of lightning that crackles in the air around them.",
+        "A brooding figure draped in a cloak of black feathers surveys the bleak and desolate landscape, an air of quiet menace surrounding them.",
+        "A daunting presence, adorned in spiked leather and wielding a wicked maul, dominates the space around them with an aura of deadly force.",
+        "A fierce warrior, clad in gleaming silver armor and wielding twin blades, charges headlong into the fray with wild abandon.",
+        "A powerful sorcerer, wreathed in arcane energies, stands amidst the smoldering ruins of a once-great city and casts a spell of immense destruction."
+    ]
 
 ---
 
@@ -57,7 +66,7 @@ This checkbox replaces the prompt instead of appending to it. Turn this ON if yo
 
 > chatgpt: Do not change the word ToreLervik-v1. Take the following prompt "{prompt}" and make 5 variations only containing 10 keywords each containing the most important parts of the prompt.
 
-> parsed response:
+parsed response:
 
     [
         "ToreLervik-v1 as assassin, black leather armor, attached hood, forearm-length gloves, hidden daggers, grappling hooks, moonless night, chirping crickets, silent, deadly",
@@ -67,4 +76,12 @@ This checkbox replaces the prompt instead of appending to it. Turn this ON if yo
         "Assassin ToreLervik-v1, thin armor, hooded face, hidden daggers, grappling hooks, abandoned streets, moonless night, chirping crickets, wraith-like movement, deadly predator"
     ]
 
+---
 
+### Give me x variations
+
+![image](images/example_1.png)
+
+> prompt: a forest path with trees
+
+> chatgpt: Describe 5 unique fantasy settings given the prompt "{prompt}" with 4 keywords per item
