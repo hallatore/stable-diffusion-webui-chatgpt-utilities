@@ -1,4 +1,5 @@
 import json
+import re
 import json5
 import openai
 
@@ -18,7 +19,13 @@ def find_json(input_text):
         end_index = end_index_curly
 
     if start_index >= 0 and end_index > 0:
-        json_object = json5.loads(input_text[start_index:end_index+1])
+        json_string = re.sub(r'\}[\s]*\{', '}, {', input_text[start_index:end_index+1])
+
+        try:
+            json_object = json5.loads(json_string)
+        except ValueError:
+            json_object = json5.loads(f"[{json_string}]")
+
         return json_object
     
     print("No JSON object found in input string.")
