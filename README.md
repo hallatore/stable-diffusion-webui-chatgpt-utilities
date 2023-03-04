@@ -1,7 +1,7 @@
 # stable-diffusion-webui-chatgpt-utilities
-This an extension for [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui) that enables you to use ChatGPT for prompt variations.
-It's a powerfull tool only limited by your imagination!
+This an extension for [stable-diffusion-webui](https://github.com/AUTOMATIC1111/stable-diffusion-webui) that enables you to use ChatGPT for prompt variations, inspiration and pretty much anything you can think of.
 
+![image](images/ui.jpg)
 
 ## Installation & Setup
 
