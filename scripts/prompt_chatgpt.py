@@ -116,7 +116,7 @@ class Script(scripts.Script):
 
             proc = process_images(copy_p)
             temp_grid = images.image_grid(proc.images, p.batch_size)
-            temp_grid = write_on_image(temp_grid, "" if prompt[0] == "" else prompt[0])
+            #temp_grid = write_on_image(temp_grid, "" if prompt[0] == "" else prompt[0])
             image_results.append(temp_grid)
 
             all_prompts += proc.all_prompts
