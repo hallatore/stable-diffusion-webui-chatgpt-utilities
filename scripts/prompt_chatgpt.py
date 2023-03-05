@@ -69,14 +69,34 @@ class Script(scripts.Script):
 
     def ui(self, is_img2img):
         chatgpt_prompt = gr.Textbox(label="", lines=3)
+        chatgpt_batch_count = gr.Number(value=4, label="Response count")
         chatgpt_prepend_prompt = gr.Textbox(label="Prepend generated prompt with", lines=1)
         chatgpt_append_prompt = gr.Textbox(label="Append generated prompt with", lines=1)
-        chatgpt_append_to_prompt = gr.Checkbox(label="Append to original prompt instead of replacing it", default=True)
-        chatgpt_skip_prompt = gr.Checkbox(label="Don't render initial prompt", default=True)
-        chatgpt_iterate_seed = gr.Checkbox(label="Iterate seed per permutation", default=True)
-        return [chatgpt_prompt, chatgpt_prepend_prompt, chatgpt_append_prompt, chatgpt_skip_prompt, chatgpt_append_to_prompt, chatgpt_iterate_seed]
+        chatgpt_append_to_prompt = gr.Checkbox(label="Append to original prompt instead of replacing it", default=False)
+        chatgpt_generate_original_prompt = gr.Checkbox(label="Also generate original prompt", default=False)
+        chatgpt_no_iterate_seed = gr.Checkbox(label="Don't increment seed per permutation", default=False)
+        
+        return [
+            chatgpt_prompt, 
+            chatgpt_batch_count, 
+            chatgpt_prepend_prompt, 
+            chatgpt_append_prompt, 
+            chatgpt_append_to_prompt, 
+            chatgpt_generate_original_prompt, 
+            chatgpt_no_iterate_seed
+        ]
 
-    def run(self, p, chatgpt_prompt, chatgpt_prepend_prompt, chatgpt_append_prompt, chatgpt_skip_prompt, chatgpt_append_to_prompt, chatgpt_iterate_seed):
+    def run(
+            self, 
+            p, 
+            chatgpt_prompt, 
+            chatgpt_batch_count, 
+            chatgpt_prepend_prompt, 
+            chatgpt_append_prompt, 
+            chatgpt_append_to_prompt,
+            chatgpt_generate_original_prompt, 
+            chatgpt_no_iterate_seed
+        ):
         modules.processing.fix_seed(p)
 
         openai.api_key = shared.opts.data.get("chatgpt_utilities_api_key", "")
@@ -86,16 +106,19 @@ class Script(scripts.Script):
         
         if (chatgpt_prompt == ""):
             raise Exception("ChatGPT prompt is empty.")
+        
+        if (chatgpt_batch_count < 1):
+            raise Exception("ChatGPT batch count needs to be 1 or higher.")
 
         original_prompt = p.prompt[0] if type(p.prompt) == list else p.prompt
         chatgpt_prompt = chatgpt_prompt.replace("{prompt}", original_prompt)
-        chatgpt_json_response = get_chat_json_completion(chatgpt_prompt)
+        chatgpt_json_response = get_chat_json_completion(chatgpt_prompt, int(chatgpt_batch_count))
 
         prompts = []
         chatgpt_prefix = ""
 
         if len(original_prompt) > 0:
-            if not chatgpt_skip_prompt:
+            if chatgpt_generate_original_prompt:
                 prompts.append(["", original_prompt])
 
             if chatgpt_append_to_prompt:
@@ -117,12 +140,19 @@ class Script(scripts.Script):
         infotexts = []
         current_seed = p.seed
 
+        # p.extra_generation_params.update({
+        #     f"ChatGPT Prompt": chatgpt_prompt,
+        #     f"ChatGPT Prepend Prompt": chatgpt_prepend_prompt,
+        #     f"ChatGPT Append Prompt": chatgpt_append_prompt,
+        #     f"ChatGPT Iterate Seed": chatgpt_iterate_seed,
+        # })
+
         for prompt in prompts:
             copy_p = copy.copy(p)
             copy_p.prompt = prompt[1]
             copy_p.seed = current_seed
 
-            if chatgpt_iterate_seed:
+            if not chatgpt_no_iterate_seed:
                 current_seed += 1
 
             proc = process_images(copy_p)
@@ -133,9 +163,10 @@ class Script(scripts.Script):
             all_prompts += proc.all_prompts
             infotexts += proc.infotexts
 
-        grid = images.image_grid(image_results, p.batch_size)
-        infotexts.insert(0, infotexts[0])
-        image_results.insert(0, grid)
-        images.save_image(grid, p.outpath_grids, "grid", grid=True, p=p)
+        if (len(prompts) > 1):
+            grid = images.image_grid(image_results, p.batch_size)
+            infotexts.insert(0, infotexts[0])
+            image_results.insert(0, grid)
+            images.save_image(grid, p.outpath_grids, "grid", grid=True, p=p)
 
         return Processed(p, image_results, p.seed, "", all_prompts=all_prompts, infotexts=infotexts)
