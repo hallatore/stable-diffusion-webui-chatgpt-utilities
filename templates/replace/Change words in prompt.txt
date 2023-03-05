@@ -1,0 +1,1 @@
+Take the prompt {prompt} and change 3 words somewhere in the prompt.

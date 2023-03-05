@@ -1,0 +1,4 @@
+Make a prompt describing a movie scene with a a character in a movie. 
+Pick a action, sci-fi or fantasy related movie genre and use it when describing the movie. 
+Pick a gender, either male or female, and use it when describing the person. 
+Focus on the person, what he/she is wearing, theme and the art style.

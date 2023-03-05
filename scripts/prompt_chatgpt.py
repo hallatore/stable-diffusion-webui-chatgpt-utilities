@@ -1,4 +1,5 @@
-import copy 
+import copy
+import os 
 import openai
 
 import modules.scripts as scripts
@@ -8,6 +9,9 @@ from modules.processing import Processed, process_images
 from modules.shared import state
 import modules.sd_samplers
 from scripts.chatgpt_utils import query_chatgpt
+from scripts.template_utils import get_templates
+
+script_dir = scripts.basedir()
 
 def on_ui_settings():
     section = ('chatgpt_utilities', "ChatGPT Utilities")
@@ -20,55 +24,50 @@ class Script(scripts.Script):
         return "ChatGPT"
 
     def ui(self, is_img2img):
+        templates = get_templates(os.path.join(script_dir, "templates"))
 
-        with gr.Row().style(equal_height=True, variant='compact'):
-            template_button2 = gr.Button(value="Generate prompts", elem_id="chatgpt_template_button2")
-            template_button1 = gr.Button(value="Add keywords", elem_id="chatgpt_template_button1")
-            template_button3 = gr.Button(value="Prompt variations", elem_id="chatgpt_template_button3")
+        with gr.Row().style(equal_height=False, variant='compact'):
+            templates_dropdown = gr.Dropdown(
+                label="Templates", 
+                choices=[t[0] for t in templates],
+                type="index", 
+                elem_id="chatgpt_template_dropdown")
+            #templates_load_button = gr.Button('🔄', elem_id="chatgpt_template_button4").style(full_width=False)
             gr.HTML('<a href="https://github.com/hallatore/stable-diffusion-webui-chatgpt-utilities" target="_blank" style="text-decoration: underline;">Help & More Examples</a>')
 
         chatgpt_prompt = gr.Textbox(label="", lines=3)
-        chatgpt_batch_count = gr.Number(value=4, label="Response count")
         chatgpt_append_to_prompt = gr.Checkbox(label="Append to original prompt instead of replacing it", default=False)
-        chatgpt_no_iterate_seed = gr.Checkbox(label="Don't increment seed per permutation", default=False)
+        chatgpt_batch_count = gr.Number(value=4, label="Response count")
         chatgpt_prepend_prompt = gr.Textbox(label="Prepend generated prompt with", lines=1)
         chatgpt_append_prompt = gr.Textbox(label="Append generated prompt with", lines=1)
+        chatgpt_no_iterate_seed = gr.Checkbox(label="Don't increment seed per permutation", default=False)
         chatgpt_generate_original_prompt = gr.Checkbox(label="Also generate original prompt", default=False)
 
-        def apply_template1():
-            return """
-Find 3 keywords per answer related to the prompt {prompt} that are not found in the prompt. 
-The keywords should be related to each other. 
-Each keyword is a single word.
-            """.strip(), True, True
+        def apply_template(dropdown_value, prompt, append_to_prompt):
+            if not (isinstance(dropdown_value, int)):
+                return prompt, append_to_prompt
 
-        template_button1.click(apply_template1, inputs=[], outputs=[chatgpt_prompt, chatgpt_append_to_prompt, chatgpt_no_iterate_seed])
+            file_path = templates[dropdown_value][1]
+            dir_name = os.path.basename(os.path.dirname(file_path))
+            
+            with open(templates[dropdown_value][1], 'r') as file:
+                template_text = file.read()
 
-        def apply_template2():
-            return """
-Make a prompt describing a movie scene with a a character in a movie.
-Themes can be Cyperpunk, Steampunk, Western, Alien or something similar.
-Pick a theme and use it when describing the movie. 
-Pick a gender, either male or female, and use it when describing the person. 
-Focus on the person, what he/she is wearing, theme and the art style
-            """.strip(), False, False
+            return template_text, dir_name.lower() == "append"
 
-        template_button2.click(apply_template2, inputs=[], outputs=[chatgpt_prompt, chatgpt_append_to_prompt, chatgpt_no_iterate_seed])
-
-        def apply_template3():
-            return """
-Take the prompt {prompt} and change 3 words somewhere in the prompt.
-            """.strip(), False, True
-
-        template_button3.click(apply_template3, inputs=[], outputs=[chatgpt_prompt, chatgpt_append_to_prompt, chatgpt_no_iterate_seed])
+        templates_dropdown.change(
+            apply_template, 
+            inputs=[templates_dropdown, chatgpt_prompt, chatgpt_append_to_prompt], 
+            outputs=[chatgpt_prompt, chatgpt_append_to_prompt]
+        )
         
         return [
             chatgpt_prompt, 
-            chatgpt_batch_count, 
             chatgpt_append_to_prompt, 
-            chatgpt_no_iterate_seed, 
+            chatgpt_batch_count, 
             chatgpt_prepend_prompt, 
             chatgpt_append_prompt, 
+            chatgpt_no_iterate_seed, 
             chatgpt_generate_original_prompt
         ]
 
@@ -76,11 +75,11 @@ Take the prompt {prompt} and change 3 words somewhere in the prompt.
             self, 
             p, 
             chatgpt_prompt, 
-            chatgpt_batch_count, 
             chatgpt_append_to_prompt, 
-            chatgpt_no_iterate_seed, 
+            chatgpt_batch_count, 
             chatgpt_prepend_prompt, 
             chatgpt_append_prompt,
+            chatgpt_no_iterate_seed, 
             chatgpt_generate_original_prompt
         ):
         modules.processing.fix_seed(p)
