@@ -98,7 +98,15 @@ Take the prompt {prompt} and change 3 words somewhere in the prompt.
 
         original_prompt = p.prompt[0] if type(p.prompt) == list else p.prompt
         chatgpt_prompt = chatgpt_prompt.replace("{prompt}", f'"{original_prompt}"')
-        chatgpt_answers = query_chatgpt(chatgpt_prompt, int(chatgpt_batch_count))
+
+        for i in range(3):
+            chatgpt_answers = query_chatgpt(chatgpt_prompt, int(chatgpt_batch_count))
+
+            if (len(chatgpt_answers) == int(chatgpt_batch_count)):
+                break
+        
+        if (len(chatgpt_answers) != int(chatgpt_batch_count)):
+            raise Exception(f"ChatGPT answers doesn't match batch count. Got {len(chatgpt_answers)} answers, expected {int(chatgpt_batch_count)}.")
 
         prompts = []
         chatgpt_prefix = ""
