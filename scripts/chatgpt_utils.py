@@ -20,6 +20,8 @@ def find_json(input_text):
 
     if start_index >= 0 and end_index > 0:
         json_string = re.sub(r'\}[\s]*\{', '}, {', input_text[start_index:end_index+1])
+        json_string = re.sub(r'\][\s]*\[', '], [', json_string)
+        json_string = re.sub(r'\"[\s]*\"', '", "', json_string)
 
         try:
             json_object = json5.loads(json_string)
