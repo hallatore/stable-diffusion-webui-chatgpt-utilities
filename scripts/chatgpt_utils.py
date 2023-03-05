@@ -5,7 +5,7 @@ import openai
 from scripts.json_utils import flatten_json_structure, try_parse_json
 
 def query_chatgpt(messages, count):
-    chat_primer = f"I want you to act as a prompt generator. Compose each answer as a visual sentence. Do not write explanations on replies. Format the answers as javascript json arrays with a single string per answer. Return exactly {count} anwsers to my question. Answer my questions exactly. My first question is:\r\n"
+    chat_primer = f"I want you to act as a prompt generator. Compose each answer as a visual sentence. Do not write explanations on replies. Format the answers as javascript json arrays with a single string per answer. Return exactly {count} to my question. Answer the questions exactly. My first question is:\r\n"
 
     messages = normalize_text_for_chat_gpt(messages.strip())
     chat_request = f'{chat_primer}{messages}'
