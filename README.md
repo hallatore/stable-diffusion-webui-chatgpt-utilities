@@ -12,6 +12,18 @@ This an extension for [stable-diffusion-webui](https://github.com/AUTOMATIC1111/
 
 - Enable ChatGPT under scripts in txt2img/img2img
 
+## Tips
+
+ChatGPT can be a bit hit & miss when it comes to generating good responses.
+
+If you want to emulate the script on [the ChatGPT website](https://chat.openai.com/chat) you can use the following prompt:
+
+    I want you to act as a prompt generator. Compose each answer as a visual sentence. Do not write explanations on replies. Format the answers as javascript json arrays with a single string per answer. Return exactly 6 anwsers to my question. Answer my questions exactly. My first question is:
+    <Make a prompt describing an cyberpunk movie scene of a character standing. And the rest of your prompt here>
+
+* Set the number of answers you want.
+* Don't use newlines in your part of the prompt. (The script strips any newlines before it sends it to ChatGPT, so you can have stuff on new lines in the UI.)
+
 ## Usage
 
 ChatGPT is quite fluid/dynamic/analog in it's responses. So play around with what questions works best. ChatGPT response is printed in the console, so you can check what it generated there and interupt SD if it's too off.
@@ -37,7 +49,7 @@ This checkbox replaces the prompt instead of appending to it. Turn this ON if yo
 
 > prompt: warlock karl urban rasputin, full shot, neutral background, highly detailed, digital painting, artstation, concept art, sharp focus, illustration
 
-> chatgpt: Describe an epic d&d scene using this prompt "{prompt}" as inspiration. 
+> chatgpt: Describe an epic d&d scene using this prompt {prompt} as inspiration. 
 Describe the person, clothing/armor and atmosphere.
 Don't use any names or artist names from the original prompt. 
 Give me 8 example with unique characteristics. 
@@ -64,7 +76,7 @@ Parsed response:
 
 > prompt: ToreLervik-v1 as an assassin, Thin, supple black leather armor with an attached hood to conceal ToreLervik-v1's face, and forearm-length gloves equipped with hidden daggers. His boots are fitted with grappling hooks which allow him to scale walls with ease., The night is moonless and the only sound is the distant chirping of crickets. In the shadows, ToreLervik-v1 moves like a wraith, silent and deadly, stalking his prey through the abandoned city streets.
 
-> chatgpt: Do not change the word ToreLervik-v1. Take the following prompt "{prompt}" and make 5 variations only containing 10 keywords each containing the most important parts of the prompt.
+> chatgpt: Do not change the word ToreLervik-v1. Take the following prompt {prompt} and make 5 variations only containing 10 keywords each containing the most important parts of the prompt.
 
 parsed response:
 
@@ -84,4 +96,4 @@ parsed response:
 
 > prompt: a forest path with trees
 
-> chatgpt: Describe 5 unique fantasy settings given the prompt "{prompt}" with 4 keywords per item
+> chatgpt: Describe 5 unique fantasy settings given the prompt {prompt} with 4 keywords per item

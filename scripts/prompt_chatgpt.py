@@ -1,61 +1,13 @@
 import copy 
-import re
 import openai
 
 import modules.scripts as scripts
 import gradio as gr
-
-from PIL import ImageFont, ImageDraw
-from fonts.ttf import Roboto
 from modules import images, shared, script_callbacks
 from modules.processing import Processed, process_images
-from modules.shared import state, opts
+from modules.shared import state
 import modules.sd_samplers
-from scripts.chatgpt_utils import get_chat_json_completion, to_message
-
-def trimPrompt(prompt):
-    prompt = prompt.replace(", :", ":")
-    prompt = re.sub(r"[, ]*\(:[\d.]+\)", "", prompt)
-    prompt = re.sub(r"[, ]*[\(]+[\)]+", "", prompt)
-    prompt = re.sub(r"^[, ]*", "", prompt)
-    prompt = re.sub(r"[, ]*$", "", prompt)
-    return prompt
-
-def splitPrompt(prompt, skip=0, include_base=True):
-    pattern = re.compile(r'[ ]*([\w ]+)([,]*)[ ]*')
-    prompts = []
-
-    if include_base:
-        prompts.append(["", prompt])
-
-    matches = list(re.finditer(pattern, prompt))
-
-    for i in range(len(matches)):
-        if i < skip:
-            continue
-
-        m = matches[i]
-        if (len(m.group(1).strip()) > 1):
-            prompts.append([m.group(1), trimPrompt(prompt.replace(m.group(0), ''))])
-    
-    return prompts
-
-# This is a modified version of code from https://github.com/Extraltodeus/test_my_prompt/blob/main/test_my_prompt_custom_script.py
-def write_on_image(img, msg):
-    ix,iy = img.size
-    draw = ImageDraw.Draw(img)
-    margin=2
-    fontsize=16
-    draw = ImageDraw.Draw(img)
-    font = ImageFont.truetype(Roboto, fontsize)
-    text_height=iy-40
-    tx = draw.textbbox((0,0),msg,font)
-    draw.text((int((ix-tx[2])/2),text_height+margin),msg,(0,0,0),font=font)
-    draw.text((int((ix-tx[2])/2),text_height-margin),msg,(0,0,0),font=font)
-    draw.text((int((ix-tx[2])/2+margin),text_height),msg,(0,0,0),font=font)
-    draw.text((int((ix-tx[2])/2-margin),text_height),msg,(0,0,0),font=font)
-    draw.text((int((ix-tx[2])/2),text_height), msg,(255,255,255),font=font)
-    return img
+from scripts.chatgpt_utils import query_chatgpt
 
 def on_ui_settings():
     section = ('chatgpt_utilities', "ChatGPT Utilities")
@@ -68,22 +20,56 @@ class Script(scripts.Script):
         return "ChatGPT"
 
     def ui(self, is_img2img):
+
+        with gr.Row().style(equal_height=True, variant='compact'):
+            template_button2 = gr.Button(value="Generate prompts", elem_id="chatgpt_template_button2")
+            template_button1 = gr.Button(value="Add keywords", elem_id="chatgpt_template_button1")
+            template_button3 = gr.Button(value="Prompt variations", elem_id="chatgpt_template_button3")
+            gr.HTML('<a href="https://github.com/hallatore/stable-diffusion-webui-chatgpt-utilities" target="_blank" style="text-decoration: underline;">Help & More Examples</a>')
+
         chatgpt_prompt = gr.Textbox(label="", lines=3)
         chatgpt_batch_count = gr.Number(value=4, label="Response count")
+        chatgpt_append_to_prompt = gr.Checkbox(label="Append to original prompt instead of replacing it", default=False)
+        chatgpt_no_iterate_seed = gr.Checkbox(label="Don't increment seed per permutation", default=False)
         chatgpt_prepend_prompt = gr.Textbox(label="Prepend generated prompt with", lines=1)
         chatgpt_append_prompt = gr.Textbox(label="Append generated prompt with", lines=1)
-        chatgpt_append_to_prompt = gr.Checkbox(label="Append to original prompt instead of replacing it", default=False)
         chatgpt_generate_original_prompt = gr.Checkbox(label="Also generate original prompt", default=False)
-        chatgpt_no_iterate_seed = gr.Checkbox(label="Don't increment seed per permutation", default=False)
+
+        def apply_template1():
+            return """
+Find 3 keywords per answer related to the prompt {prompt} that are not found in the prompt. 
+The keywords should be related to each other. 
+Each keyword is a single word.
+            """.strip(), True, True
+
+        template_button1.click(apply_template1, inputs=[], outputs=[chatgpt_prompt, chatgpt_append_to_prompt, chatgpt_no_iterate_seed])
+
+        def apply_template2():
+            return """
+Make a prompt describing a movie scene with a a character in a movie.
+Themes can be Cyperpunk, Steampunk, Western, Alien or something similar.
+Pick a theme and use it when describing the movie. 
+Pick a gender, either male or female, and use it when describing the person. 
+Focus on the person, what he/she is wearing, theme and the art style
+            """.strip(), False, False
+
+        template_button2.click(apply_template2, inputs=[], outputs=[chatgpt_prompt, chatgpt_append_to_prompt, chatgpt_no_iterate_seed])
+
+        def apply_template3():
+            return """
+Take the prompt {prompt} and change 3 words somewhere in the prompt.
+            """.strip(), False, True
+
+        template_button3.click(apply_template3, inputs=[], outputs=[chatgpt_prompt, chatgpt_append_to_prompt, chatgpt_no_iterate_seed])
         
         return [
             chatgpt_prompt, 
             chatgpt_batch_count, 
+            chatgpt_append_to_prompt, 
+            chatgpt_no_iterate_seed, 
             chatgpt_prepend_prompt, 
             chatgpt_append_prompt, 
-            chatgpt_append_to_prompt, 
-            chatgpt_generate_original_prompt, 
-            chatgpt_no_iterate_seed
+            chatgpt_generate_original_prompt
         ]
 
     def run(
@@ -91,11 +77,11 @@ class Script(scripts.Script):
             p, 
             chatgpt_prompt, 
             chatgpt_batch_count, 
+            chatgpt_append_to_prompt, 
+            chatgpt_no_iterate_seed, 
             chatgpt_prepend_prompt, 
-            chatgpt_append_prompt, 
-            chatgpt_append_to_prompt,
-            chatgpt_generate_original_prompt, 
-            chatgpt_no_iterate_seed
+            chatgpt_append_prompt,
+            chatgpt_generate_original_prompt
         ):
         modules.processing.fix_seed(p)
 
@@ -111,8 +97,8 @@ class Script(scripts.Script):
             raise Exception("ChatGPT batch count needs to be 1 or higher.")
 
         original_prompt = p.prompt[0] if type(p.prompt) == list else p.prompt
-        chatgpt_prompt = chatgpt_prompt.replace("{prompt}", original_prompt)
-        chatgpt_json_response = get_chat_json_completion(chatgpt_prompt, int(chatgpt_batch_count))
+        chatgpt_prompt = chatgpt_prompt.replace("{prompt}", f'"{original_prompt}"')
+        chatgpt_answers = query_chatgpt(chatgpt_prompt, int(chatgpt_batch_count))
 
         prompts = []
         chatgpt_prefix = ""
@@ -124,8 +110,8 @@ class Script(scripts.Script):
             if chatgpt_append_to_prompt:
                 chatgpt_prefix = f"{original_prompt}, "
 
-        for resp in chatgpt_json_response:
-            prompts.append([resp, f"{chatgpt_prefix}{chatgpt_prepend_prompt}{resp}{chatgpt_append_prompt}"])
+        for answer in chatgpt_answers:
+            prompts.append([answer, f"{chatgpt_prefix}{chatgpt_prepend_prompt}{answer}{chatgpt_append_prompt}"])
                            
         p.do_not_save_grid = True
         state.job_count = 0
@@ -140,13 +126,6 @@ class Script(scripts.Script):
         infotexts = []
         current_seed = p.seed
 
-        # p.extra_generation_params.update({
-        #     f"ChatGPT Prompt": chatgpt_prompt,
-        #     f"ChatGPT Prepend Prompt": chatgpt_prepend_prompt,
-        #     f"ChatGPT Append Prompt": chatgpt_append_prompt,
-        #     f"ChatGPT Iterate Seed": chatgpt_iterate_seed,
-        # })
-
         for prompt in prompts:
             copy_p = copy.copy(p)
             copy_p.prompt = prompt[1]
@@ -157,7 +136,6 @@ class Script(scripts.Script):
 
             proc = process_images(copy_p)
             temp_grid = images.image_grid(proc.images, p.batch_size)
-            #temp_grid = write_on_image(temp_grid, "" if prompt[0] == "" else prompt[0])
             image_results.append(temp_grid)
 
             all_prompts += proc.all_prompts
