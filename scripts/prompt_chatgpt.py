@@ -40,8 +40,10 @@ class Script(scripts.Script):
         chatgpt_batch_count = gr.Number(value=4, label="Response count")
         chatgpt_prepend_prompt = gr.Textbox(label="Prepend generated prompt with", lines=1)
         chatgpt_append_prompt = gr.Textbox(label="Append generated prompt with", lines=1)
-        chatgpt_no_iterate_seed = gr.Checkbox(label="Don't increment seed per permutation", default=False)
-        chatgpt_generate_original_prompt = gr.Checkbox(label="Also generate original prompt", default=False)
+        with gr.Row().style(equal_height=False, variant='compact'):
+            chatgpt_no_iterate_seed = gr.Checkbox(label="Don't increment seed per permutation", default=False)
+            chatgpt_generate_original_prompt = gr.Checkbox(label="Generate original prompt also", default=False)
+            chatgpt_generate_debug_prompt = gr.Checkbox(label="DEBUG - Stop before image generation", default=False)
 
         def apply_template(dropdown_value, prompt, append_to_prompt):
             if not (isinstance(dropdown_value, int)):
@@ -68,7 +70,8 @@ class Script(scripts.Script):
             chatgpt_prepend_prompt, 
             chatgpt_append_prompt, 
             chatgpt_no_iterate_seed, 
-            chatgpt_generate_original_prompt
+            chatgpt_generate_original_prompt,
+            chatgpt_generate_debug_prompt
         ]
 
     def run(
@@ -80,7 +83,8 @@ class Script(scripts.Script):
             chatgpt_prepend_prompt, 
             chatgpt_append_prompt,
             chatgpt_no_iterate_seed, 
-            chatgpt_generate_original_prompt
+            chatgpt_generate_original_prompt,
+            chatgpt_generate_debug_prompt
         ):
         modules.processing.fix_seed(p)
 
@@ -106,6 +110,8 @@ class Script(scripts.Script):
         
         if (len(chatgpt_answers) != int(chatgpt_batch_count)):
             raise Exception(f"ChatGPT answers doesn't match batch count. Got {len(chatgpt_answers)} answers, expected {int(chatgpt_batch_count)}.")
+        if (chatgpt_generate_debug_prompt):
+            raise Exception("DEBUG - Stopped before image generation.\r\n\r\n" + "\r\n".join(chatgpt_answers))
 
         prompts = []
         chatgpt_prefix = ""
