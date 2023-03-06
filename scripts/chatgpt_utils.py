@@ -4,6 +4,17 @@ import openai
 
 from scripts.json_utils import flatten_json_structure, try_parse_json
 
+def retry_query_chatgpt(messages, count, retries):
+    for i in range(retries):
+        try:
+            chatgpt_answers = query_chatgpt(messages, count)
+        finally:
+            if (len(chatgpt_answers) == count):
+                return chatgpt_answers
+    
+    if (len(chatgpt_answers) != count):
+        raise Exception(f"ChatGPT answers doesn't match batch count. Got {len(chatgpt_answers)} answers, expected {count}.")
+
 def query_chatgpt(messages, count):
     system_primer = f"Act like you are a terminal and always format your response as json. Always return exactly {count} anwsers per question."
     chat_primer = f"I want you to act as a prompt generator. Compose each answer as a visual sentence. Do not write explanations on replies. Format the answers as javascript json arrays with a single string per answer. Return exactly {count} to my question. Answer the questions exactly. Answer the following question {count} times:\r\n"

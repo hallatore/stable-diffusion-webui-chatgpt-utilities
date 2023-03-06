@@ -1,14 +1,15 @@
 import copy
-import os 
+import os
 import openai
 
 import modules.scripts as scripts
 import gradio as gr
 from modules import images, shared, script_callbacks
 from modules.processing import Processed, process_images
+from modules.ui_components import FormRow
 from modules.shared import state
 import modules.sd_samplers
-from scripts.chatgpt_utils import query_chatgpt
+from scripts.chatgpt_utils import retry_query_chatgpt
 from scripts.template_utils import get_templates
 
 script_dir = scripts.basedir()
@@ -26,7 +27,7 @@ class Script(scripts.Script):
     def ui(self, is_img2img):
         templates = get_templates(os.path.join(script_dir, "templates"))
 
-        with gr.Row().style(equal_height=False, variant='compact'):
+        with gr.Row():
             templates_dropdown = gr.Dropdown(
                 label="Templates", 
                 choices=[t[0] for t in templates],
@@ -35,12 +36,17 @@ class Script(scripts.Script):
             #templates_load_button = gr.Button('🔄', elem_id="chatgpt_template_button4").style(full_width=False)
             gr.HTML('<a href="https://github.com/hallatore/stable-diffusion-webui-chatgpt-utilities" target="_blank" style="text-decoration: underline;">Help & More Examples</a>')
 
-        chatgpt_prompt = gr.Textbox(label="", lines=3)
-        chatgpt_append_to_prompt = gr.Checkbox(label="Append to original prompt instead of replacing it", default=False)
-        chatgpt_batch_count = gr.Number(value=4, label="Response count")
-        chatgpt_prepend_prompt = gr.Textbox(label="Prepend generated prompt with", lines=1)
-        chatgpt_append_prompt = gr.Textbox(label="Append generated prompt with", lines=1)
-        with gr.Row().style(equal_height=False, variant='compact'):
+        chatgpt_prompt = gr.Textbox(label="", placeholder="ChatGPT prompt (Try some templates for inspiration)", lines=4)
+
+        with gr.Row():
+            chatgpt_batch_count = gr.Number(value=4, label="Response count")
+            chatgpt_append_to_prompt = gr.Checkbox(label="Append to original prompt instead of replacing it", default=False)
+
+        with gr.Row():
+            chatgpt_prepend_prompt = gr.Textbox(label="Prepend generated prompt with", lines=1)
+            chatgpt_append_prompt = gr.Textbox(label="Append generated prompt with", lines=1)
+
+        with gr.Row():
             chatgpt_no_iterate_seed = gr.Checkbox(label="Don't increment seed per permutation", default=False)
             chatgpt_generate_original_prompt = gr.Checkbox(label="Generate original prompt also", default=False)
             chatgpt_generate_debug_prompt = gr.Checkbox(label="DEBUG - Stop before image generation", default=False)
@@ -65,8 +71,8 @@ class Script(scripts.Script):
         
         return [
             chatgpt_prompt, 
-            chatgpt_append_to_prompt, 
             chatgpt_batch_count, 
+            chatgpt_append_to_prompt, 
             chatgpt_prepend_prompt, 
             chatgpt_append_prompt, 
             chatgpt_no_iterate_seed, 
@@ -78,8 +84,8 @@ class Script(scripts.Script):
             self, 
             p, 
             chatgpt_prompt, 
-            chatgpt_append_to_prompt, 
             chatgpt_batch_count, 
+            chatgpt_append_to_prompt, 
             chatgpt_prepend_prompt, 
             chatgpt_append_prompt,
             chatgpt_no_iterate_seed, 
@@ -101,15 +107,8 @@ class Script(scripts.Script):
 
         original_prompt = p.prompt[0] if type(p.prompt) == list else p.prompt
         chatgpt_prompt = chatgpt_prompt.replace("{prompt}", f'"{original_prompt}"')
+        chatgpt_answers = retry_query_chatgpt(chatgpt_prompt, int(chatgpt_batch_count), 3)
 
-        for i in range(3):
-            chatgpt_answers = query_chatgpt(chatgpt_prompt, int(chatgpt_batch_count))
-
-            if (len(chatgpt_answers) == int(chatgpt_batch_count)):
-                break
-        
-        if (len(chatgpt_answers) != int(chatgpt_batch_count)):
-            raise Exception(f"ChatGPT answers doesn't match batch count. Got {len(chatgpt_answers)} answers, expected {int(chatgpt_batch_count)}.")
         if (chatgpt_generate_debug_prompt):
             raise Exception("DEBUG - Stopped before image generation.\r\n\r\n" + "\r\n".join(chatgpt_answers))
 
