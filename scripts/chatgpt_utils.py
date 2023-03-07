@@ -5,12 +5,19 @@ import openai
 from scripts.json_utils import flatten_json_structure, try_parse_json
 
 def retry_query_chatgpt(messages, count, retries):
+    chatgpt_answers = []
+
     for i in range(retries):
         try:
             chatgpt_answers = query_chatgpt(messages, count)
-        finally:
+
             if (len(chatgpt_answers) == count):
                 return chatgpt_answers
+        except Exception as e:
+            if (i == retries - 1):
+                raise e
+            
+            print(f"ChatGPT query failed. Retrying. Error: {e}")
     
     if (len(chatgpt_answers) != count):
         raise Exception(f"ChatGPT answers doesn't match batch count. Got {len(chatgpt_answers)} answers, expected {count}.")
