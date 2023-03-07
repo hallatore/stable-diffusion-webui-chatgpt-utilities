@@ -15,9 +15,9 @@ def retry_query_chatgpt(messages, count, retries):
     if (len(chatgpt_answers) != count):
         raise Exception(f"ChatGPT answers doesn't match batch count. Got {len(chatgpt_answers)} answers, expected {count}.")
 
-def query_chatgpt(messages, count):
-    system_primer = f"Act like you are a terminal and always format your response as json. Always return exactly {count} anwsers per question."
-    chat_primer = f"I want you to act as a prompt generator. Compose each answer as a visual sentence. Do not write explanations on replies. Format the answers as javascript json arrays with a single string per answer. Return exactly {count} to my question. Answer the questions exactly. Answer the following question {count} times:\r\n"
+def query_chatgpt(messages, answer_count):
+    system_primer = f"Act like you are a terminal and always format your response as json. Always return exactly {answer_count} anwsers per question."
+    chat_primer = f"I want you to act as a prompt generator. Compose each answer as a visual sentence. Do not write explanations on replies. Format the answers as javascript json arrays with a single string per answer. Return exactly {answer_count} to my question. Answer the questions exactly. Answer the following question:\r\n"
 
     messages = normalize_text_for_chat_gpt(messages.strip())
     chat_request = f'{chat_primer}{messages}'
