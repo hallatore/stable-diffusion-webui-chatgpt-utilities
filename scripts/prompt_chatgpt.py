@@ -49,7 +49,10 @@ class Script(scripts.Script):
         with gr.Row():
             chatgpt_no_iterate_seed = gr.Checkbox(label="Don't increment seed per permutation", default=False)
             chatgpt_generate_original_prompt = gr.Checkbox(label="Generate original prompt also", default=False)
+
+        with gr.Row():
             chatgpt_generate_debug_prompt = gr.Checkbox(label="DEBUG - Stop before image generation", default=False)
+            chatgpt_just_run_prompts = gr.Checkbox(label="OVERRIDE - Run prompts from textbox (one per line)", default=False)
 
         def apply_template(dropdown_value, prompt, append_to_prompt):
             if not (isinstance(dropdown_value, int)):
@@ -77,7 +80,8 @@ class Script(scripts.Script):
             chatgpt_append_prompt, 
             chatgpt_no_iterate_seed, 
             chatgpt_generate_original_prompt,
-            chatgpt_generate_debug_prompt
+            chatgpt_generate_debug_prompt,
+            chatgpt_just_run_prompts
         ]
 
     def run(
@@ -90,7 +94,8 @@ class Script(scripts.Script):
             chatgpt_append_prompt,
             chatgpt_no_iterate_seed, 
             chatgpt_generate_original_prompt,
-            chatgpt_generate_debug_prompt
+            chatgpt_generate_debug_prompt,
+            chatgpt_just_run_prompts
         ):
         modules.processing.fix_seed(p)
 
@@ -106,24 +111,31 @@ class Script(scripts.Script):
             raise Exception("ChatGPT batch count needs to be 1 or higher.")
 
         original_prompt = p.prompt[0] if type(p.prompt) == list else p.prompt
-        chatgpt_prompt = chatgpt_prompt.replace("{prompt}", f'"{original_prompt}"')
-        chatgpt_answers = retry_query_chatgpt(chatgpt_prompt, int(chatgpt_batch_count), 3)
-
-        if (chatgpt_generate_debug_prompt):
-            raise Exception("DEBUG - Stopped before image generation.\r\n\r\n" + "\r\n".join(chatgpt_answers))
-
         prompts = []
-        chatgpt_prefix = ""
 
-        if len(original_prompt) > 0:
-            if chatgpt_generate_original_prompt:
-                prompts.append(["", original_prompt])
+        if (chatgpt_just_run_prompts):
+            for prompt in chatgpt_prompt.splitlines():
+                prompts.append([prompt, prompt])
+        else:
+            chatgpt_prompt = chatgpt_prompt.replace("{prompt}", f'"{original_prompt}"')
+            chatgpt_answers = retry_query_chatgpt(chatgpt_prompt, int(chatgpt_batch_count), 3)
+            chatgpt_prefix = ""
 
-            if chatgpt_append_to_prompt:
-                chatgpt_prefix = f"{original_prompt}, "
+            if len(original_prompt) > 0:
+                if chatgpt_generate_original_prompt:
+                    prompts.append(["", original_prompt])
 
-        for answer in chatgpt_answers:
-            prompts.append([answer, f"{chatgpt_prefix}{chatgpt_prepend_prompt}{answer}{chatgpt_append_prompt}"])
+                if chatgpt_append_to_prompt:
+                    chatgpt_prefix = f"{original_prompt}, "
+
+            for answer in chatgpt_answers:
+                prompts.append([answer, f"{chatgpt_prefix}{chatgpt_prepend_prompt}{answer}{chatgpt_append_prompt}"])
+
+            
+            print(f"Prompts:\r\n" + "\r\n".join([p[1] for p in prompts]) + "\r\n")
+
+            if (chatgpt_generate_debug_prompt):
+                raise Exception("DEBUG - Stopped before image generation.\r\n\r\n" + "\r\n".join([p[1] for p in prompts]))
                            
         p.do_not_save_grid = True
         state.job_count = 0
