@@ -35,10 +35,12 @@ def query_chatgpt(messages, answer_count, is_last_retry = False):
 
     print(f"ChatGPT request:\r\n{chat_request}\r\n")
 
+    temperature = 0.5 if is_last_retry else 1.0
+
     chat_gpt_response = get_chat_completion([ 
         to_message("system", system_primer),
         to_message("user", chat_request)
-        ])    
+        ], temperature)    
 
     result = flatten_json_structure(try_parse_json(chat_gpt_response))
 
@@ -58,6 +60,6 @@ def normalize_text_for_chat_gpt(text):
     normalized = re.sub(r'\s+', ' ', normalized)
     return normalized
 
-def get_chat_completion(messages):
-    completion = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages, temperature=0.5)
+def get_chat_completion(messages, temperature):
+    completion = openai.ChatCompletion.create(model="gpt-3.5-turbo", messages=messages, temperature=temperature)
     return completion.choices[0].message.content
