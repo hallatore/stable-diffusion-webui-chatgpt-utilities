@@ -1,7 +1,10 @@
 import launch
+import os
 
-if not launch.is_installed("openai"):
-    launch.run_pip("install openai", "requirements for chatgpt-utilities")
+req_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "requirements.txt")
 
-if not launch.is_installed("json5"):
-    launch.run_pip("install json5", "requirements for chatgpt-utilities")
+with open(req_file) as file:
+    for lib in file:
+        lib = lib.strip()
+        if not launch.is_installed(lib):
+            launch.run_pip(f"install {lib}", f"chatgpt-utilities requirement: {lib}")
