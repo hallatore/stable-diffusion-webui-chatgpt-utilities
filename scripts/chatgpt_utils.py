@@ -1,16 +1,15 @@
-import json
 import re
 import openai
 
 from scripts.json_utils import flatten_json_structure, try_parse_json
 
-def retry_query_chatgpt(messages, count, retries):
+def retry_query_chatgpt(messages, count, temperature, retries):
     chatgpt_answers = []
 
     for i in range(retries):
         try:
             is_last_retry = i == retries - 1 and retries > 1
-            chatgpt_answers = query_chatgpt(messages, count, is_last_retry)
+            chatgpt_answers = query_chatgpt(messages, count, temperature, is_last_retry)
 
             if (len(chatgpt_answers) == count):
                 return chatgpt_answers
@@ -19,11 +18,13 @@ def retry_query_chatgpt(messages, count, retries):
                 raise e
             
             print(f"ChatGPT query failed. Retrying. Error: {e}")
+        
+        temperature = max(0.5, temperature - 0.3)
     
     if (len(chatgpt_answers) != count):
         raise Exception(f"ChatGPT answers doesn't match batch count. Got {len(chatgpt_answers)} answers, expected {count}.")
 
-def query_chatgpt(messages, answer_count, is_last_retry = False):
+def query_chatgpt(messages, answer_count, temperature, is_last_retry = False):
     system_primer = f"Act like you are a terminal and always format your response as json. Always return exactly {answer_count} anwsers per question."
     chat_primer = f"I want you to act as a prompt generator. Compose each answer as a visual sentence. Do not write explanations on replies. Format the answers as javascript json arrays with a single string per answer. Return exactly {answer_count} to my question. Answer the questions exactly. Answer the following question:\r\n"
 
@@ -34,8 +35,6 @@ def query_chatgpt(messages, answer_count, is_last_retry = False):
         chat_request += f"\r\nReturn exactly {answer_count} answers to my question."
 
     print(f"ChatGPT request:\r\n{chat_request}\r\n")
-
-    temperature = 0.5 if is_last_retry else 1.0
 
     chat_gpt_response = get_chat_completion([ 
         to_message("system", system_primer),

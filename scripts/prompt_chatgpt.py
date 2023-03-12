@@ -34,7 +34,12 @@ class Script(scripts.Script):
                 type="index", 
                 elem_id="chatgpt_template_dropdown")
             #templates_load_button = gr.Button('🔄', elem_id="chatgpt_template_button4").style(full_width=False)
-            gr.HTML('<a href="https://github.com/hallatore/stable-diffusion-webui-chatgpt-utilities" target="_blank" style="text-decoration: underline;">Help & More Examples</a>')
+            precision_dropdown = gr.Dropdown(
+                label="Answer precision",
+                choices=["Specific", "Normal", "Dreamy", "Hallucinating"],
+                value="Dreamy",
+                type="index",
+            )
 
         chatgpt_prompt = gr.Textbox(label="", placeholder="ChatGPT prompt (Try some templates for inspiration)", lines=4)
 
@@ -53,6 +58,9 @@ class Script(scripts.Script):
         with gr.Row():
             chatgpt_generate_debug_prompt = gr.Checkbox(label="DEBUG - Stop before image generation", default=False)
             chatgpt_just_run_prompts = gr.Checkbox(label="OVERRIDE - Run prompts from textbox (one per line)", default=False)
+
+        with gr.Row():
+            gr.HTML('<a href="https://github.com/hallatore/stable-diffusion-webui-chatgpt-utilities" target="_blank" style="text-decoration: underline;">Help & More Examples</a>')
 
         def apply_template(dropdown_value, prompt, append_to_prompt):
             if not (isinstance(dropdown_value, int)):
@@ -74,6 +82,7 @@ class Script(scripts.Script):
         
         return [
             chatgpt_prompt, 
+            precision_dropdown,
             chatgpt_batch_count, 
             chatgpt_append_to_prompt, 
             chatgpt_prepend_prompt, 
@@ -88,6 +97,7 @@ class Script(scripts.Script):
             self, 
             p, 
             chatgpt_prompt, 
+            precision_dropdown,
             chatgpt_batch_count, 
             chatgpt_append_to_prompt, 
             chatgpt_prepend_prompt, 
@@ -110,6 +120,18 @@ class Script(scripts.Script):
         if (chatgpt_batch_count < 1):
             raise Exception("ChatGPT batch count needs to be 1 or higher.")
 
+        match precision_dropdown:
+            case 0:
+                temperature = 0.5
+            case 1:
+                temperature = 1.0
+            case 2:
+                temperature = 1.25
+            case 3:
+                temperature = 1.5
+            case _:
+                temperature = 0.5
+
         original_prompt = p.prompt[0] if type(p.prompt) == list else p.prompt
         prompts = []
 
@@ -118,7 +140,7 @@ class Script(scripts.Script):
                 prompts.append([prompt, prompt])
         else:
             chatgpt_prompt = chatgpt_prompt.replace("{prompt}", f'"{original_prompt}"')
-            chatgpt_answers = retry_query_chatgpt(chatgpt_prompt, int(chatgpt_batch_count), 3)
+            chatgpt_answers = retry_query_chatgpt(chatgpt_prompt, int(chatgpt_batch_count), temperature, 4)
             chatgpt_prefix = ""
 
             if len(original_prompt) > 0:
