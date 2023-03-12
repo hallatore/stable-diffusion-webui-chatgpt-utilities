@@ -20,8 +20,22 @@ Use the templates to play around and see what is possible.
 
 PS: {prompt} is a special key and will insert the original prompt in your ChatGPT request.
 
+### Multiprompt
+
+You can split a prompt into multiple parts by using `::`. 
+This is useful if ChatGPT has a hard time returning a complex prompt.
+
+> Example: `Make a prompt describing an old cabin in the woods:: Make a color description`
+
+You can also add a number behind to get a certain amount of results. This will result in a combination of all possible solutions. 
+The following example would give you 12 (4*3) images.
+
+> Example: `Make a prompt describing an old cabin in the woods::4 Make a color description::3`
+
 ## Examples
 
 [![name](images/change_color.jpg)](images/change_color.jpg?raw=true)
 
 [![name](images/make_prompt.jpg)](images/make_prompt.jpg?raw=true)
+
+[![name](images/multiprompt.jpg)](images/multiprompt.jpg?raw=true)

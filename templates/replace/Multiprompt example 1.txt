@@ -1,0 +1,6 @@
+Make a prompt describing a person in dress, costume, character or something similar. 
+Pick a gender, either male or female, and use it when describing the person. 
+Focus on the person, what he/she is wearing and theme.
+::
+Make a color description::
+Describe an art style of an image

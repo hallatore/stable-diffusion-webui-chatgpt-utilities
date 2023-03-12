@@ -6,9 +6,9 @@ import modules.scripts as scripts
 import gradio as gr
 from modules import images, shared, script_callbacks
 from modules.processing import Processed, process_images
-from modules.ui_components import FormRow
 from modules.shared import state
 import modules.sd_samplers
+from scripts.chatgpt_answers import get_chatgpt_answers
 from scripts.chatgpt_utils import retry_query_chatgpt
 from scripts.template_utils import get_templates
 
@@ -139,8 +139,7 @@ class Script(scripts.Script):
             for prompt in chatgpt_prompt.splitlines():
                 prompts.append([prompt, prompt])
         else:
-            chatgpt_prompt = chatgpt_prompt.replace("{prompt}", f'"{original_prompt}"')
-            chatgpt_answers = retry_query_chatgpt(chatgpt_prompt, int(chatgpt_batch_count), temperature, 4)
+            chatgpt_answers = get_chatgpt_answers(chatgpt_prompt, int(chatgpt_batch_count), temperature, original_prompt)
             chatgpt_prefix = ""
 
             if len(original_prompt) > 0:
