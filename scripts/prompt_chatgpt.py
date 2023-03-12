@@ -120,17 +120,16 @@ class Script(scripts.Script):
         if (chatgpt_batch_count < 1):
             raise Exception("ChatGPT batch count needs to be 1 or higher.")
 
-        match precision_dropdown:
-            case 0:
-                temperature = 0.5
-            case 1:
-                temperature = 1.0
-            case 2:
-                temperature = 1.25
-            case 3:
-                temperature = 1.5
-            case _:
-                temperature = 0.5
+        temperature = 1.0
+
+        if (precision_dropdown == 0):
+            temperature = 0.5
+        elif (precision_dropdown == 1):
+            temperature = 1.0
+        elif (precision_dropdown == 2):
+            temperature = 1.25
+        elif (precision_dropdown == 3):
+            temperature = 1.5
 
         original_prompt = p.prompt[0] if type(p.prompt) == list else p.prompt
         prompts = []
