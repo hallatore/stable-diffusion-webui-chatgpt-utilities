@@ -14,11 +14,15 @@ This an extension for [stable-diffusion-webui](https://github.com/AUTOMATIC1111/
 
 ## Usage
 
-ChatGPT is quite fluid/dynamic/analog in it's responses. So play around with what questions works best. ChatGPT response is printed in the console, so you can check what it generated there and interupt SD if it's too off.
+ChatGPT is quite fluid/dynamic/analog in it's responses. So play around with what questions works best. ChatGPT response is printed in the console, so you can check what it generated there and interupt SD if it's too off. Or check the Debug checkbox to skip image generation when testing prompts.
 
 Use the templates to play around and see what is possible.
 
-PS: {prompt} is a special key and will insert the original prompt in your ChatGPT request.
+## Tips
+
+* {prompt} is a special key and will insert the original prompt in your ChatGPT request.
+* You can punch up keywords/results by doing the following. Put `(` in prepend textbox, and `:1.5)` in append textbox.
+* ChatGPT is good at staying on track, but bad at being creative within a prompt. Use multiprompt `::` when you want to mix wildy different things.
 
 ### Multiprompt
 
