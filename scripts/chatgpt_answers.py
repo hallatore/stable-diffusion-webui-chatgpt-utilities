@@ -26,7 +26,7 @@ def get_chatgpt_answers(chatgpt_prompt, batch_count, temperature, original_promp
     results = []
 
     for prompt_count, prompt in prompts:
-        chatgpt_prompt = chatgpt_prompt.replace("{prompt}", f'"{original_prompt}"')
+        prompt = prompt.replace("{prompt}", f'"{original_prompt}"')
         chatgpt_answers = retry_query_chatgpt(prompt, prompt_count, temperature, 4)
 
         if (len(results) == 0):
